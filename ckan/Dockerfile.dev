@@ -1,4 +1,4 @@
-FROM openknowledge/ckan-dev:2.8
+FROM viderum/ckan:2.7.4-uwsgi-varnish-harvest-celery-archiver
 
 MAINTAINER Your Name Here <you@example.com>
 
@@ -11,3 +11,16 @@ MAINTAINER Your Name Here <you@example.com>
 
 # Clone the extension(s) your are writing for your own project in the `src` folder
 # to get them mounted in this image at runtime
+
+# Dirty fix for https://github.com/ckan/ckan/issues/3610
+RUN sed -i "s/filename = re.sub(ur'-+', u'-', filename)//g" /srv/app/src/ckan/ckan/lib/munge.py
+
+# Add envs needed for celery started by ckanext-archiver
+RUN echo "[app:celery]" >> /srv/app/production.ini && \
+    echo "BROKER_BACKEND = redis" >> /srv/app/production.ini && \
+    echo "BROKER_HOST = redis://localhost/1" >> /srv/app/production.ini && \
+    echo "CELERY_RESULT_BACKEND = redis" >> /srv/app/production.ini && \
+    echo "REDIS_HOST = 127.0.0.1" >> /srv/app/production.ini && \
+    echo "REDIS_PORT = 6379" >> /srv/app/production.ini && \
+    echo "REDIS_DB = 0" >> /srv/app/production.ini && \
+    echo "REDIS_CONNECT_RETRY = True" >> /srv/app/production.ini
